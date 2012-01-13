@@ -4,39 +4,60 @@
 #include <raptor2.h>
 
 #include "rdf_database.h"
-#include "rdf_parser.h"
 
 /*****
 ** Toma cada uno de las tripletas del archivo y las descompone
 ** va guardando en la BD.
 *****/
-void save_triple(void *user, raptor_statement *triple)
+static void save_triple(void *user, raptor_statement *triple)
 {
-    //raptor_statement_print_as_ntriples(triple, stdout);
-    //fputc('\n', stdout);
+    rdf_database db = (rdf_database) user;
+
+    printf("obtengo la bd\n"  );
+
+    rdf_node subject = rdf_node_new();
+    rdf_node object = rdf_node_new();
+
+    printf("creo los dos nodos\n");
+
+    /**
+    ** VER EL TEMA DE LA MEMORIA
+    **/
+    subject->value.string = (char*) malloc(sizeof(char));
+
+    printf("Le di memoria\n"  );
+
+    sprintf(subject->value.string, "%s", raptor_term_to_string (triple->subject));
+    //strcpy(object->value.string, raptor_term_to_string (triple->object));
+
+    //edge que los une
+    rdf_edge edge = rdf_edge_new(subject, object, raptor_term_to_string (triple->predicate));
+
+    // se agrega a la bd
+    rdf_graph lastGraph = rdf_database_get_last_graph(db);
+    rdf_graph_add_edge(lastGraph, edge);
+
+    raptor_free_statement(triple);
 }
 
 
 /*****
 ** Lee el archivo que contiene las tripletas RDF
-** y hace el llamado a la funcion para guardarlos
+** y hace el llamado a la funcion save_triple() para guardarlos
 *****/
-void rdf_parse_file(char *file)
+void rdf_database_read_file(rdf_database database, const char *file)
 {
     raptor_world *world = NULL;
     raptor_parser *rdf_parser = NULL;
     unsigned char *uri_string;
     raptor_uri *uri, *base_uri;
 
-    // graph
-    rdf_graph migrafo = rdf_graph_new();
-
     // parser
     world = raptor_new_world();
     rdf_parser = raptor_new_parser(world, "rdfxml");
 
     // seteo funcion handler para cada nodo
-    raptor_parser_set_statement_handler(rdf_parser, (void*)&migrafo, save_triple);
+    raptor_parser_set_statement_handler(rdf_parser, (void*)database, save_triple);
 
     uri_string = raptor_uri_filename_to_uri_string(file);
     uri = raptor_new_uri(world, uri_string);
