@@ -11,12 +11,6 @@ int main(int argc, char const *argv[])
 	if (argc == 2)
 	{
 		rdf_database database;
-		rdf_graph grafo;
-
-		grafo = rdf_graph_new();
-		database = rdf_database_new();
-		
-		rdf_database_add_graph(database, grafo);
 		rdf_database_read_file(database, argv[1]);
 	}
 	else

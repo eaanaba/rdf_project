@@ -11,7 +11,7 @@ PROGRAMA=main
 .KEEP_STATE:
 
 $(PROGRAMA): $(OBJETOS)
-	cc -o $(PROGRAMA) $(OBJETOS) $(CFLAGS) $(SLIBS)
+	cc -g -o $(PROGRAMA) $(OBJETOS) $(CFLAGS) $(SLIBS)
 
 clean:
 	rm -f $(PROGRAMA) $(OBJETOS)

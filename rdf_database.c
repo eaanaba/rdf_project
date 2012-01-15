@@ -4,99 +4,107 @@
 
 #include "rdf_database.h"
 
-/*****
-** Crea una nueva base de datos RDF.
-*****/
+/********************************************************
+*** Funciones para rdf_database
+*********************************************************/
 rdf_database rdf_database_new()
 {
-    rdf_database nueva;
-    nueva = (rdf_database) malloc(sizeof(rdf_database));
-    nueva->item = NULL;
-    nueva->next = NULL;
-    return nueva;
+    rdf_database new;
+    rdf_graph grafo;
+    new = (rdf_database) malloc(sizeof(rdf_database));
+    grafo = (rdf_graph) malloc(sizeof(rdf_graph));
+
+    new->graphs = grafo;
+    new->current = grafo;
+
+    return new;
 }
 
-/*****
-** Objecto el ultimo grafo de la bd
-*****/
-rdf_database rdf_database_get_last(rdf_database db)
+void rdf_database_add_graph(rdf_database db, rdf_graph g)
 {
-    rdf_database aux = db;
+    rdf_graph aux = db->graphs;
+    db->current = g;
+
     while(aux->next != NULL)
         aux = aux->next;
-    return aux;
+    
+    aux->next = g;
 }
 
-rdf_graph rdf_database_get_last_graph(rdf_database db)
-{
-    rdf_database aux = rdf_database_get_last(db);
-    return aux->item;
-}
-
-int rdf_database_add_graph(rdf_database db, rdf_graph g)
-{
-    rdf_database aux = rdf_database_get_last(db);
-
-    if(aux->item != NULL)
-    {
-        rdf_database nuevo = rdf_database_new();
-        nuevo->item = g;
-        aux->next = nuevo;
-    }
-    else
-    {
-        aux->item = g;
-    }
-}
-
-/*****
-** Crea un grafo rdf vacio.
-*****/
+/********************************************************
+*** Funciones para rdf_graph
+*********************************************************/
 rdf_graph rdf_graph_new()
 {
-    rdf_graph nuevo;
-    nuevo = (rdf_graph) malloc(sizeof(rdf_graph));
-    nuevo->triple = NULL;
-    nuevo->next = NULL;
-    return nuevo;
+    rdf_graph new;
+    rdf_node nodeset; // node_set vacio
+    rdf_edge edgeset; // edge_set vacio
+
+    nodeset = rdf_node_new();
+    edgeset = rdf_edge_new();
+
+    new = (rdf_graph) malloc(sizeof(rdf_graph));
+    new->next = NULL;
+    new->node_set = nodeset;
+    new->edge_set = edgeset;
+
+    return new;
 }
 
-/*****
-** Anade una nueva tripleta al grafo.
-*****/
-int rdf_graph_add_edge(rdf_graph g, rdf_edge e)
+/********************************************************
+*** Funciones para rdf_edge
+*********************************************************/
+rdf_edge rdf_edge_new()
 {
-    rdf_graph aux = g;
-    rdf_graph nuevo = rdf_graph_new();
+    rdf_edge new;
+    new = (rdf_edge) malloc(sizeof(rdf_edge));
+    new->subject = NULL;
+    new->object = NULL;
+    new->next = NULL;
+    return new;
+}
+
+void rdf_edge_add(rdf_edge edge, rdf_node sub, rdf_node obj, unsigned char* pre)
+{
+    rdf_edge aux = edge;
+    rdf_edge new = rdf_edge_new();
 
     while(aux->next != NULL)
         aux = aux->next;
     
-    aux->next = nuevo;
-    nuevo->triple = e;
+    new->subject = sub;
+    new->object = obj;
+    new->predicate.string = (unsigned char*) calloc(strlen(pre), sizeof(unsigned char*));
+    strcpy(new->predicate.string, pre);
+    new->predicate.string_len = strlen(pre);
+
 }
 
-/*****
-** Crea una nueva tripleta con valores.
-*****/
-rdf_edge rdf_edge_new(rdf_node s, rdf_node o, unsigned char *p)
-{
-    rdf_edge nuevo;
-    nuevo = (rdf_edge) malloc(sizeof(rdf_edge));
-    
-    nuevo->predicate.string = p;
-    nuevo->subject = s;
-    nuevo->object = o;
-
-    return nuevo;
-}
-
-/*****
-** Crea un grafo rdf vacio.
-*****/
+/********************************************************
+*** Funciones para rdf_node
+*********************************************************/
 rdf_node rdf_node_new()
 {
-    rdf_node nuevo;
-    nuevo = (rdf_node) malloc(sizeof(rdf_node));
-    return nuevo;
+    rdf_node new;
+    new = (rdf_node) malloc(sizeof(rdf_node));
+    new->next = NULL;
+    return new;
+}
+
+void rdf_node_set_label(rdf_node node, unsigned char *label)
+{
+    node->value.string = (unsigned char*) calloc(strlen(label), sizeof(unsigned char));
+    strcpy(node->value.string, label);
+    node->value.string_len = strlen(label);
+}
+
+// agrega un nodo al node set
+void rdf_node_add(rdf_node nodes, rdf_node new)
+{
+    rdf_node aux = nodes;
+
+    while(aux->next != NULL)
+        aux = aux->next;
+    
+    aux->next = new;
 }

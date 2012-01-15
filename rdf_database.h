@@ -1,83 +1,72 @@
 // compilacion: gcc -o rdfprint rdf_database.c `pkg-config raptor2 --cflags --libs`
 // BNBrdfdc01.ntriples  contiene 6.773.422 triples.
 
-/*****
-** Me indica tipo de nodo.
-*****/
+// tipo de cada nodo
 typedef enum {
-    RDF_VALUE_TYPE_UNKOWN,
-    RDF_VALUE_TYPE_URI,
-    RDF_VALUE_TYPE_LITERAL,
-    RDF_VALUE_TYPE_BLANK
+    RDF_VALUE_TYPE_UNKOWN = 0,
+    RDF_VALUE_TYPE_URI = 1,
+    RDF_VALUE_TYPE_LITERAL = 2,
+    RDF_VALUE_TYPE_BLANK = 4
 } rdf_node_value_type;
 
-
-/*****
-** Estructura para el valor del nodo.
-*****/
+// valor del nodo
 typedef struct {
-    char *string;
+    unsigned char *string;
+    unsigned int string_len;
 } rdf_node_value;
 
-
-/*****
-** Cada nodo pertenece a un tipo (blank, literal, uri).
-** y contiene valor. Nodo de una tripleta.
-*****/
-typedef struct {
+// nodos
+typedef struct node {
+    unsigned int arity;
     rdf_node_value_type type;
     rdf_node_value value;
+    struct node *next;
 } *rdf_node;
 
-
-/*****
-** Edge - estructura que forma una tripleta
-*****/
-typedef struct {
+// edges subcontunjo rdf_node x rdf_node
+typedef struct edge {
     rdf_node subject;
     rdf_node object;
     rdf_node_value predicate;
+    struct edge *next;
 } *rdf_edge;
 
-
-/*****
-** Estructura que guarda un grafo completo rdf.
-** Una lista ligada de grafos.
-*****/
-typedef struct graph {
-    rdf_edge triple;
+// graphs
+typedef struct graph{
+    rdf_node node_set;
+    rdf_edge edge_set;
     struct graph *next;
 } *rdf_graph;
 
-/*****
-** Estructura que guarda un grafo completo rdf.
-** Una lista ligada de grafos.
-*****/
+// database
 typedef struct database {
-    rdf_graph item;
-    struct database *next;
+    rdf_graph graphs;
+    rdf_graph current;
 } *rdf_database;
 
-/*********************************************
-** FUNCIONES PARA RDF_GRAPH
-**********************************************/
+// guardo ultimo registro
+
+/********************************************************
+*** Funciones para rdf_database
+*********************************************************/
 rdf_database rdf_database_new();
-rdf_database rdf_database_get_last(rdf_database db);
-rdf_graph rdf_database_get_last_graph(rdf_database db);
-int rdf_database_add_graph(rdf_database db, rdf_graph g);
+void rdf_database_add_graph(rdf_database db, rdf_graph g);
 
-/*********************************************
-** FUNCIONES PARA RDF_GRAPH
-**********************************************/
+/********************************************************
+*** Funciones para rdf_graph
+*********************************************************/
 rdf_graph rdf_graph_new();
-int rdf_graph_add_edge(rdf_graph g, rdf_edge e);
+int rdf_graph_have_node(rdf_graph g, rdf_node node);
 
-/*********************************************
-** FUNCIONES PARA RDF_EDGE
-**********************************************/
-rdf_edge rdf_edge_new(rdf_node s, rdf_node o, unsigned char *p);
+/********************************************************
+*** Funciones para rdf_edge
+*********************************************************/
+rdf_edge rdf_edge_new();
+void rdf_edge_add(rdf_edge edge, rdf_node sub, rdf_node obj, unsigned char* pre);
 
-/*********************************************
-** FUNCIONES PARA RDF_NODE
-**********************************************/
+/********************************************************
+*** Funciones para rdf_node
+*********************************************************/
 rdf_node rdf_node_new();
+void rdf_node_set_label(rdf_node node, unsigned char* label);
+void rdf_node_add(rdf_node nodes, rdf_node new);
