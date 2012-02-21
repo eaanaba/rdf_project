@@ -1,3 +1,1 @@
-* saber si nodo existe en lista nodes.
-* agregar aquel nodo.
-* saber a que grafo va actual nodo leido.
+* problema en rdf_node_new()

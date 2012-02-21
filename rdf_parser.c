@@ -17,14 +17,13 @@ static void save_triple(void *user, raptor_statement *triple)
     unsigned char *o = raptor_term_to_string (triple->object);
     unsigned char *p = raptor_term_to_string (triple->predicate);
 
-    rdf_node subject = rdf_node_new();
-    rdf_node object = rdf_node_new();
+    rdf_node subject = rdf_node_new(s);
+    rdf_node object = rdf_node_new(o);
 
     subject->type = triple->subject->type;
-    rdf_node_set_label(subject, s);
 
-    object->type = triple->object->type;
-    rdf_node_set_label(object, o);
+    //object->type = triple->object->type;
+    //rdf_node_set_label(object, o);
 
     //raptor_statement_print_as_ntriples(triple, stdout);
     //fputc('\n', stdout);
