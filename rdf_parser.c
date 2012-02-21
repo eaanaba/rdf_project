@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <raptor2.h>
-
-#include "rdf_database.h"
+#include "rdf_parser.h"
 
 /*****
 ** Toma cada uno de las tripletas del archivo y las descompone
@@ -11,22 +6,14 @@
 *****/
 static void save_triple(void *user, raptor_statement *triple)
 {
-    rdf_database db = (rdf_database) user;
-    
+    rdf_database db = (rdf_database)user;
+
     unsigned char *s = raptor_term_to_string (triple->subject);
     unsigned char *o = raptor_term_to_string (triple->object);
     unsigned char *p = raptor_term_to_string (triple->predicate);
 
-    rdf_node subject = rdf_node_new(s);
-    rdf_node object = rdf_node_new(o);
-
-    subject->type = triple->subject->type;
-
-    //object->type = triple->object->type;
-    //rdf_node_set_label(object, o);
-
-    //raptor_statement_print_as_ntriples(triple, stdout);
-    //fputc('\n', stdout);
+    raptor_statement_print_as_ntriples(triple, stdout);
+    fputc('\n', stdout);
 }
 
 

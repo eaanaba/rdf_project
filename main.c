@@ -3,8 +3,9 @@
 #include <string.h>
 #include <raptor2.h>
 
-#include "rdf_database.h"
 #include "rdf_parser.h"
+
+rdf_graph current;
 
 int main(int argc, char const *argv[])
 {

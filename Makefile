@@ -2,7 +2,7 @@
 # Makefile
 #
 
-FUENTES=main.c rdf_database.c rdf_parser.c
+FUENTES=main.c rdf_db.c rdf_graph.c rdf_parser.c
 OBJETOS=$(FUENTES:.c=.o)
 CFLAGS=-I/usr/include/raptor2
 SLIBS=-lraptor2
