@@ -48,18 +48,19 @@ typedef struct graph{
 *** Funciones
 *****/
 rdf_graph rdf_graph_new();
-int rdf_graph_node_add(rdf_graph g, rdf_node v);
-int rdf_graph_edge_add(rdf_graph g, rdf_edge e);
+void rdf_graph_node_add(rdf_graph g, rdf_node v);
+void rdf_graph_edge_add(rdf_graph g, rdf_edge e);
 
 rdf_node rdf_node_new();
-int rdf_node_set_label(rdf_node v, unsigned char *label);
-int rdf_node_set_arity(rdf_node v, unsigned int arity);
+void rdf_node_set_label(rdf_node v, unsigned char *label);
+void rdf_node_set_arity(rdf_node v, unsigned int arity);
 
 rdf_edge rdf_edge_new(rdf_node v1, rdf_node v2);
-int rdf_edge_set_label(rdf_edge e, unsigned char *label);
+void rdf_edge_set_label(rdf_edge e, unsigned char *label);
 
 rdf_node_set rdf_node_set_new();
-int rdf_node_set_add(rdf_node_set V, rdf_node v);
+void rdf_node_set_add(rdf_node_set V, rdf_node v);
 
 rdf_edge_set rdf_edge_set_new();
-int rdf_edge_set_add(rdf_edge_set E, rdf_edge e);
+void rdf_edge_set_add(rdf_edge_set E, rdf_edge e);
+rdf_node rdf_edge_set_get_pair(rdf_edge_set E, rdf_node sub);

@@ -1,1 +1,2 @@
-* problema en rdf_node_new()
+* leer las tripletas del archivos y guardarlas en un grafo.
+* saber que grafo estoy leyendo.
