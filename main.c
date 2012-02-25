@@ -5,14 +5,16 @@
 
 #include "rdf_parser.h"
 
-rdf_graph current;
-
 int main(int argc, char const *argv[])
 {
 	if (argc == 2)
 	{
 		rdf_database database;
+		database = rdf_database_new();
+		CURRENT_GRAPH = database->G;
 		rdf_database_read_file(database, argv[1]);
+
+		rdf_database_print(database);
 	}
 	else
 	{

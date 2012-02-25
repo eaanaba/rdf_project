@@ -15,3 +15,4 @@ typedef struct database {
 *****/
 rdf_database rdf_database_new();
 int rdf_database_add_graph(rdf_database db, rdf_graph g);
+void rdf_database_print(rdf_database db);

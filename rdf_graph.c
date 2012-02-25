@@ -12,14 +12,29 @@ rdf_graph rdf_graph_new()
 	return nuevo;
 }
 
-void rdf_graph_node_add(rdf_graph g, rdf_node v)
+int rdf_graph_isempty(rdf_graph G)
 {
-	rdf_node_set_add(g->V, v);
+	if(G->V->value == NULL)
+		return 1;
+	else
+		return 0;
 }
 
-void rdf_graph_edge_add(rdf_graph g, rdf_edge e)
+void rdf_graph_print(rdf_graph G)
 {
-	rdf_edge_set_add(g->E, e);
+	rdf_node_set aux = G->V;
+	
+	if(aux->value == NULL)
+	{
+		printf("Graph vacio!\n");
+		return;
+	}
+
+	while(aux != NULL)
+	{
+		printf("contenido: %s\n", aux->value->value.string);
+		aux = aux->next;
+	}
 }
 
 /*****
@@ -32,15 +47,13 @@ rdf_node rdf_node_new()
 	return nuevo;
 }
 
-void rdf_node_set_label(rdf_node v, unsigned char *label)
+void rdf_node_set_label(rdf_node v, char *label)
 {
-	strcpy(v->value.string, label);
-	v->value.string_len = strlen(label);
-}
-
-void rdf_node_set_arity(rdf_node v, unsigned int arity)
-{
-	v->arity = arity;
+	unsigned int labelen = strlen(label);
+	v->value.string = (char *)calloc(labelen, sizeof(char*));
+	
+	sprintf(v->value.string, "%s", label);
+	v->value.string_len = labelen;
 }
 
 /*****
@@ -55,10 +68,13 @@ rdf_edge rdf_edge_new(rdf_node v1, rdf_node v2)
 	return nuevo;
 }
 
-void rdf_edge_set_label(rdf_edge e, unsigned char *label)
+void rdf_edge_set_label(rdf_edge e, char *label)
 {
-	strcpy(e->predicate.string, label);
-	e->predicate.string_len = strlen(label);
+	unsigned int labelen = strlen(label);
+	e->predicate.string = (char *)calloc(labelen, sizeof(char*));
+	
+	sprintf(e->predicate.string, "%s", label);
+	e->predicate.string_len = labelen;
 }
 
 /*****
@@ -73,9 +89,41 @@ rdf_node_set rdf_node_set_new()
 	return nuevo;
 }	
 
-void rdf_node_set_add(rdf_node_set V, rdf_node v)
+void rdf_node_set_add(rdf_node_set V, char *label)
 {
-	// TODO
+	rdf_node_set aux = V;
+	rdf_node_set nuevo = rdf_node_set_new();
+	
+	rdf_node nnode = rdf_node_new();
+	rdf_node_set_label(nnode, label);
+
+	while(aux->next != NULL)
+		aux = aux->next;
+	
+	if(aux->value == NULL)
+		aux->value = nnode;
+	else
+	{
+		aux->next = nuevo;
+		nuevo->value = nnode;
+	}
+}
+
+int rdf_node_set_exist(rdf_node_set V, char *label)
+{
+	rdf_node_set aux = V;
+	
+	if(aux->value == NULL)
+		return 0;
+	
+	while(aux != NULL)
+	{
+		if(strcmp(label, aux->value->value.string) == 0)
+			return 1;
+		aux = aux->next;
+	}
+	
+	return 0;
 }
 
 /*****
