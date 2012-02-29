@@ -1,4 +1,11 @@
-#include "rdf_parser.h"
+#include <string.h>
+#include <stdlib.h>
+#include <raptor2.h>
+
+#include "rdf_graph.h"
+
+raptor_parser *rdf_parser = NULL;
+int count = 0;
 
 /*****
 ** Toma cada uno de las tripletas del archivo y las descompone
@@ -7,44 +14,24 @@
 static void save_triple(void *user, raptor_statement *triple)
 {
     rdf_database db = (rdf_database)user;
-    short int isblank = 0;
 
-    char *s = raptor_term_to_string (triple->subject);
-    char *o = raptor_term_to_string (triple->object);
-    char *p = raptor_term_to_string (triple->predicate);
+    char *s = raptor_uri_to_string(triple->subject->value.uri);
+    char *p = raptor_uri_to_string(triple->predicate->value.uri);
+    char *o;
 
-    // si existen los nodos
-    int si_s = rdf_node_set_exist(CURRENT_GRAPH->V, s);
-    int si_o = rdf_node_set_exist(CURRENT_GRAPH->V, o);
-
-    if(strncmp(s, "_:genid", 7) == 0)
-        isblank = 1;
-
-    if(rdf_graph_isempty(CURRENT_GRAPH))
+    if(triple->object->type == 1)
+        o = raptor_uri_to_string(triple->object->value.uri);
+    else
+        o = triple->object->value.literal.string;
+    
+    if(count == 1000)
     {
-        rdf_node_set_add(CURRENT_GRAPH->V, s);
-        rdf_node_set_add(CURRENT_GRAPH->V, o);
-    }
-    else if(si_s && !si_o)
-        rdf_node_set_add(CURRENT_GRAPH->V, o);
-    else if(!si_s && si_o)
-        rdf_node_set_add(CURRENT_GRAPH->V, s);
-    else if(si_s && si_o)
-        return;
-    else if(!si_s && !si_o && isblank == 1)
-    {
-        rdf_node_set_add(CURRENT_GRAPH->V, s);
-        rdf_node_set_add(CURRENT_GRAPH->V, o);
+        raptor_parser_parse_abort(rdf_parser);
     }
     else
-    {
-        rdf_graph nuevo = rdf_graph_new();
-        rdf_database_add_graph(db, nuevo);
-        CURRENT_GRAPH = nuevo;
-
-        rdf_node_set_add(CURRENT_GRAPH->V, s);
-        rdf_node_set_add(CURRENT_GRAPH->V, o);
-    }
+        rdf_database_add_triple(db, s, o, p);
+    
+    count++;
 }
 
 
@@ -55,7 +42,6 @@ static void save_triple(void *user, raptor_statement *triple)
 void rdf_database_read_file(rdf_database db, const char *file)
 {
     raptor_world *world = NULL;
-    raptor_parser *rdf_parser = NULL;
     unsigned char *uri_string;
     raptor_uri *uri, *base_uri;
 
