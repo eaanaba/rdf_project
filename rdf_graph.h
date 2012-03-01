@@ -59,10 +59,10 @@ void rdf_edge_set_label(rdf_edge e, char *label);
 void rdf_edge_add(rdf_edge e, rdf_node v1, rdf_node v2, char *label);
 
 rdf_node_set rdf_node_set_new();
-int rdf_node_set_add_node(rdf_node_set V, rdf_node nuevo);
 
 rdf_edge_set rdf_edge_set_new();
-rdf_node rdf_edge_set_get_pair(rdf_edge_set E, rdf_node sub);
+void rdf_edge_set_add(rdf_edge_set E, rdf_edge e);
+void rdf_edge_set_print(rdf_edge_set E);
 
 rdf_graph rdf_graph_new();
 int rdf_graph_isempty(rdf_graph G);
@@ -70,6 +70,7 @@ void rdf_graph_print(rdf_graph G);
 rdf_node rdf_graph_add_node(rdf_graph G, rdf_node node);
 rdf_edge rdf_graph_add_edge(rdf_graph G, rdf_edge edge);
 rdf_node rdf_graph_node_exist(rdf_graph G, char *string);
+rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub);
 
 rdf_database rdf_database_new();
 rdf_graph rdf_database_add_graph(rdf_database db);

@@ -10,11 +10,8 @@ void decomposing(rdf_graph G)
 	
 }
 
-rdf_graph decompose(rdf_graph G, rdf_graph Smax)
+rdf_graph decompose(rdf_graph G, rdf_graph Smax, rdf_node_set V)
 {
-	// lista de grafos
-	rdf_node_set V = G->V;
-
 	// obtengo los sucesores
 	rdf_node_set suc = successors(G, V->value);
 	print_successors(suc);
@@ -28,30 +25,7 @@ rdf_graph decompose(rdf_graph G, rdf_graph Smax)
 
 rdf_node_set successors(rdf_graph G, rdf_node v1)
 {
-	rdf_node auxnode;
-	rdf_node_set suc;
-
-	suc = rdf_node_set_new();
-	auxnode = rdf_edge_set_get_pair(G->E, v1);
-
-	if(auxnode == NULL)
-		return NULL;
-
-	if(suc->value == NULL)
-		suc->value = auxnode;
-
-	while(auxnode)
-	{
-		while(suc->next)
-			suc = suc->next;
-
-		rdf_node_set nuevo = rdf_node_set_new();
-		suc->next = nuevo;
-		nuevo->value = auxnode;
-		auxnode = rdf_edge_set_get_pair(G->E, auxnode);
-	}
-
-	return suc;
+	
 }
 
 void print_successors(rdf_node_set V)

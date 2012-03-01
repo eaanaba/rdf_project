@@ -26,7 +26,7 @@ int rdf_graph_isempty(rdf_graph G)
 
 void rdf_graph_print(rdf_graph G)
 {
-	rdf_node_set aux = G->V;
+	rdf_edge_set auxe = G->E;
 	
 	if(rdf_graph_isempty(G))
 	{
@@ -34,11 +34,7 @@ void rdf_graph_print(rdf_graph G)
 		return;
 	}
 
-	while(aux != NULL)
-	{
-		printf("contenido: %s\n", aux->value->value.string);
-		aux = aux->next;
-	}
+	rdf_edge_set_print(auxe);
 }
 
 rdf_node rdf_graph_add_node(rdf_graph G, rdf_node node)
@@ -101,6 +97,21 @@ rdf_node rdf_graph_node_exist(rdf_graph G, char *string)
 	}
 }
 
+rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub)
+{
+	rdf_edge_set aux = G->E;
+	rdf_edge_set nuevo = rdf_edge_set_new();
+	
+	while(aux)
+	{
+		if(aux->value->subject == sub)
+			rdf_edge_set_add(nuevo, aux->value);
+		aux = aux->next;
+	}
+
+	return nuevo;
+}
+
 
 /**********************************************************************
 ****** funciones rdf_node
@@ -161,21 +172,6 @@ rdf_node_set rdf_node_set_new()
 	return nuevo;
 }
 
-int rdf_node_set_add_node(rdf_node_set V, rdf_node nuevo)
-{
-	rdf_node_set aux = V;
-
-	if(aux->value = NULL)
-		aux->value = nuevo;
-	else
-	{
-		while(aux->next != NULL)
-			aux = aux->next;
-		aux->next = rdf_node_set_new();
-		aux->next->value = nuevo;
-	}
-}
-
 
 /**********************************************************************
 ****** funciones rdf_edge_set
@@ -189,19 +185,33 @@ rdf_edge_set rdf_edge_set_new()
 	return nuevo;
 }
 
-rdf_node rdf_edge_set_get_pair(rdf_edge_set E, rdf_node sub)
+void rdf_edge_set_add(rdf_edge_set E, rdf_edge e)
 {
 	rdf_edge_set aux = E;
-	
+
+	if(aux->value == NULL)
+		aux->value = e;
+	else
+	{
+		while(aux->next != NULL)
+			aux = aux->next;
+		rdf_edge_set nuevo = rdf_edge_set_new();
+		nuevo->value = e;
+		aux->next = nuevo;
+	}
+}
+
+void rdf_edge_set_print(rdf_edge_set E)
+{
+	rdf_edge_set aux = E;
+	rdf_edge arco;
+
 	while(aux)
 	{
-		if(aux->value->subject == sub)
-			return aux->value->object;
-		else
-			aux = aux->next;
+		arco = aux->value;
+		printf("%s %s %s\n", arco->subject->value.string, arco->predicate.string, arco->object->value.string);
+		aux = aux->next;
 	}
-
-	return NULL;
 }
 
 
@@ -240,9 +250,7 @@ rdf_graph rdf_database_add_graph(rdf_database db)
 	rdf_database aux = db;
 
 	while(aux->next != NULL)
-	{
 		aux = aux->next;
-	}
 
 	rdf_database nuevo = rdf_database_new();
 	aux->next = nuevo;
@@ -287,15 +295,16 @@ void rdf_database_add_triple(rdf_database db, char *s, char *o, char *p)
 	}
 	else if(!subject && !object)
 	{
-		G = rdf_database_add_graph(db);
-
-		object = rdf_node_new();
-		rdf_node_set_label(object, o);
-		rdf_graph_add_node(G, object);
+		if(!rdf_graph_isempty(G))
+			G = rdf_database_add_graph(db);
 
 		subject = rdf_node_new();
 		rdf_node_set_label(subject, s);
 		rdf_graph_add_node(G, subject);
+
+		object = rdf_node_new();
+		rdf_node_set_label(object, o);
+		rdf_graph_add_node(G, object);
 
 		rdf_edge_add(arco, subject, object, p);
     	rdf_graph_add_edge(G, arco);

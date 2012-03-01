@@ -13,12 +13,17 @@ int main(int argc, char const *argv[])
 	{
 		rdf_database database;
 		database = rdf_database_new();
+		
 		CURRENT_GRAPH = database->G;
+		
+		// parser file y poblo la bd.
 		rdf_database_read_file(database, argv[1]);
 
+		//rdf_database_print(database);
+
 		//test lps
-		rdf_graph smax;
-		decompose(database->G, smax);
+		//rdf_graph smax;
+		//decompose(database->G, smax);
 	}
 	else
 	{
