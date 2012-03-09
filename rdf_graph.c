@@ -10,9 +10,10 @@
 rdf_graph rdf_graph_new()
 {
 	rdf_graph nuevo;
-	nuevo = (rdf_graph)malloc(sizeof(rdf_graph));
+	nuevo = (rdf_graph)malloc(sizeof(*nuevo));
 	nuevo->V = rdf_node_set_new();
 	nuevo->E = rdf_edge_set_new();
+	nuevo->cost = 0;
 	return nuevo;
 }
 
@@ -41,6 +42,8 @@ rdf_node rdf_graph_add_node(rdf_graph G, rdf_node node)
 {
 	rdf_node_set aux = G->V;
 
+	G->cost += node->value.cost;
+
 	if(aux->value == NULL)
 	{
     	aux->value = node;
@@ -61,6 +64,9 @@ rdf_node rdf_graph_add_node(rdf_graph G, rdf_node node)
 rdf_edge rdf_graph_add_edge(rdf_graph G, rdf_edge edge)
 {
 	rdf_edge_set aux = G->E;
+
+	G->cost += edge->predicate.cost;
+	edge->subject->arity++;
 
 	if(aux->value == NULL)
 	{
@@ -97,6 +103,20 @@ rdf_node rdf_graph_node_exist(rdf_graph G, char *string)
 	}
 }
 
+int rdf_graph_count_nodes(rdf_graph G)
+{
+	int count = 0;
+	rdf_node_set aux = G->V;
+
+	while(aux != NULL && aux->value != NULL)
+	{
+		count++;
+		aux = aux->next;
+	}
+
+	return count;
+}
+
 rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub)
 {
 	rdf_edge_set aux = G->E;
@@ -112,6 +132,47 @@ rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub)
 	return nuevo;
 }
 
+void rdf_graph_add_triple(rdf_graph G, char *s, char *p, char *o)
+{
+	rdf_edge arco = rdf_edge_new();
+
+	rdf_node subject = rdf_graph_node_exist(G, s);
+	rdf_node object = rdf_graph_node_exist(G, o);
+
+	if(subject && !object)
+	{
+		object = rdf_node_new();
+		rdf_node_set_label(object, o);
+		rdf_graph_add_node(G, object);
+		rdf_edge_add(arco, subject, object, p);
+    	rdf_graph_add_edge(G, arco);
+	}
+	else if(!subject && object)
+	{
+		subject = rdf_node_new();
+		rdf_node_set_label(subject, s);
+		rdf_graph_add_node(G, subject);
+		rdf_edge_add(arco, subject, object, p);
+    	rdf_graph_add_edge(G, arco);
+	}
+	else if(!subject && !object)
+	{
+		if(!rdf_graph_isempty(G))
+			return;
+
+		subject = rdf_node_new();
+		rdf_node_set_label(subject, s);
+		rdf_graph_add_node(G, subject);
+
+		object = rdf_node_new();
+		rdf_node_set_label(object, o);
+		rdf_graph_add_node(G, object);
+
+		rdf_edge_add(arco, subject, object, p);
+    	rdf_graph_add_edge(G, arco);
+	}
+}
+
 
 /**********************************************************************
 ****** funciones rdf_node
@@ -119,17 +180,24 @@ rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub)
 rdf_node rdf_node_new()
 {
 	rdf_node nuevo;
-	nuevo = (rdf_node)malloc(sizeof(nuevo));
+	nuevo = (rdf_node)malloc(sizeof(*nuevo));
+	nuevo->arity = 0;
 	return nuevo;
 }
 
 void rdf_node_set_label(rdf_node v, char *label)
 {
+	int i;
+	int count = 0;
 	int labelen = strlen(label);
 	v->value.string = (char*)calloc(labelen, sizeof(char*));
 
+	for (i = 0; i < labelen; ++i)
+		count += (int)label[i];
+
 	strcpy(v->value.string, label);
 	v->value.string_len = labelen;
+	v->value.cost = count;
 }
 
 
@@ -152,11 +220,17 @@ void rdf_edge_add(rdf_edge e, rdf_node sub, rdf_node obj, char *label)
 
 void rdf_edge_set_label(rdf_edge e, char *label)
 {
+	int i;
+	int count = 0;
 	int labelen = strlen(label);
 	e->predicate.string = (char*)calloc(labelen, sizeof(char*));
 
+	for (i = 0; i < labelen; ++i)
+		count += (int)label[i];
+
 	strcpy(e->predicate.string, label);
 	e->predicate.string_len = labelen;
+	e->predicate.cost = count;
 }
 
 
@@ -166,7 +240,7 @@ void rdf_edge_set_label(rdf_edge e, char *label)
 rdf_node_set rdf_node_set_new()
 {
 	rdf_node_set nuevo;
-	nuevo = (rdf_node_set)malloc(sizeof(nuevo));
+	nuevo = (rdf_node_set)malloc(sizeof(*nuevo));
 	nuevo->value = NULL;
 	nuevo->next = NULL;
 	return nuevo;
@@ -179,7 +253,7 @@ rdf_node_set rdf_node_set_new()
 rdf_edge_set rdf_edge_set_new()
 {
 	rdf_edge_set nuevo;
-	nuevo = (rdf_edge_set)malloc(sizeof(nuevo));
+	nuevo = (rdf_edge_set)malloc(sizeof(*nuevo));
 	nuevo->value = NULL;
 	nuevo->next = NULL;
 	return nuevo;
@@ -199,6 +273,33 @@ void rdf_edge_set_add(rdf_edge_set E, rdf_edge e)
 		nuevo->value = e;
 		aux->next = nuevo;
 	}
+}
+
+rdf_edge rdf_edge_set_max_cost(rdf_edge_set E)
+{
+	rdf_edge_set aux = E;
+	rdf_edge e;
+	rdf_edge maxe;
+
+	int cost;
+	int maxcost = 0;
+
+	while(aux != NULL)
+	{
+		e = aux->value;
+		
+		cost = e->subject->value.cost + e->predicate.cost + e->object->value.cost;
+		
+		if(cost > maxcost)
+		{
+			maxcost = cost;
+			maxe = e;
+		}
+
+		aux = aux->next;
+	}
+
+	return maxe;
 }
 
 void rdf_edge_set_print(rdf_edge_set E)
@@ -221,8 +322,11 @@ void rdf_edge_set_print(rdf_edge_set E)
 rdf_database rdf_database_new()
 {
 	rdf_database db;
-	db = (rdf_database)malloc(sizeof(rdf_database));
+	db = (rdf_database)malloc(sizeof(*db));
 	db->G = rdf_graph_new();
+	db->n = 1;
+	db->current = db->G;
+	db->G->index = 0;
 	db->next = NULL;
 	return db;
 }
@@ -248,13 +352,17 @@ int rdf_database_count_nodes(rdf_database db)
 rdf_graph rdf_database_add_graph(rdf_database db)
 {
 	rdf_database aux = db;
+	db->n++;
 
 	while(aux->next != NULL)
 		aux = aux->next;
 
 	rdf_database nuevo = rdf_database_new();
 	aux->next = nuevo;
-	CURRENT_GRAPH = nuevo->G;
+	nuevo->G->index = aux->G->index + 1;
+	db->current = nuevo->G;
+
+	return db->current;
 }
 
 void rdf_database_print(rdf_database db)
@@ -262,15 +370,15 @@ void rdf_database_print(rdf_database db)
 	rdf_database aux = db;
 	while(aux)
 	{
-		printf("grafo---\n");
+		printf("grafo id:%d\n", aux->G->index);
 		rdf_graph_print(aux->G);
 		aux = aux->next;
 	}
 }
 
-void rdf_database_add_triple(rdf_database db, char *s, char *o, char *p)
+void rdf_database_add_triple(rdf_database db, char *s, char *p, char *o)
 {
-	rdf_graph G = CURRENT_GRAPH;
+	rdf_graph G = db->current;
 
 	rdf_edge arco = rdf_edge_new();
 

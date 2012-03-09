@@ -1,7 +1,8 @@
-// valor del nodo
+// valor del nodo o edge
 typedef struct {
     unsigned char *string;
     int string_len;
+    int cost;
 } rdf_label;
 
 // nodos
@@ -31,22 +32,19 @@ typedef struct node_set {
 
 // graphs
 typedef struct {
+    int index;
     rdf_node_set V;
     rdf_edge_set E;
+    int cost;
 } *rdf_graph;
 
 // database
 typedef struct database {
     rdf_graph G;
+    int n;
+    rdf_graph current;
     struct database *next;
 } *rdf_database;
-
-
-/*****
-*** GLOBAL VARIABLE
-***/
-rdf_graph CURRENT_GRAPH;
-
 
 /*****
 *** Funciones
@@ -62,6 +60,7 @@ rdf_node_set rdf_node_set_new();
 
 rdf_edge_set rdf_edge_set_new();
 void rdf_edge_set_add(rdf_edge_set E, rdf_edge e);
+rdf_edge rdf_edge_set_max_cost(rdf_edge_set E);
 void rdf_edge_set_print(rdf_edge_set E);
 
 rdf_graph rdf_graph_new();
@@ -70,7 +69,9 @@ void rdf_graph_print(rdf_graph G);
 rdf_node rdf_graph_add_node(rdf_graph G, rdf_node node);
 rdf_edge rdf_graph_add_edge(rdf_graph G, rdf_edge edge);
 rdf_node rdf_graph_node_exist(rdf_graph G, char *string);
+int rdf_graph_count_nodes(rdf_graph G);
 rdf_edge_set rdf_graph_get_pair(rdf_graph G, rdf_node sub);
+void rdf_graph_add_triple(rdf_graph G, char *s, char *o, char *p);
 
 rdf_database rdf_database_new();
 rdf_graph rdf_database_add_graph(rdf_database db);

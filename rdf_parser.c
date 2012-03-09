@@ -24,12 +24,12 @@ static void save_triple(void *user, raptor_statement *triple)
     else
         o = triple->object->value.literal.string;
     
-    if(count == 50)
+    if(count == 200000)
     {
         raptor_parser_parse_abort(rdf_parser);
     }
     else
-        rdf_database_add_triple(db, s, o, p);
+        rdf_database_add_triple(db, s, p, o);
     
     count++;
 }
