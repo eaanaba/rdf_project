@@ -8,6 +8,7 @@
 #include "rdf_graph.h"
 #include "rdf_parser.h"
 #include "rdf_lps.h"
+#include "rdf_similar.h"
 
 int main(int argc, char **argv)
 {
@@ -24,7 +25,13 @@ int main(int argc, char **argv)
 	rdf_database DATABASE = rdf_database_new();
 	rdf_database_read_file(DATABASE, argv[1]);
 
-	printf("grafos de bd vale: %d\n", DATABASE->n);
+	// creo los terms globales y de cada grafo
+	inicio = clock();
+	lista terms = database_get_terms(DATABASE);
+	lista_proc(terms, DATABASE);
+	final = clock();
+
+	lista_print(terms);
 
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
@@ -34,11 +41,13 @@ int main(int argc, char **argv)
 	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://xmlns.com/foaf/0.1/Person");
 	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://xmlns.com/foaf/0.1/name", "Aristotle");
 
-	inicio = clock();
-	buscar(DATABASE, Gprueba);
-	final = clock();
+	//inicio = clock();
+	//buscar(DATABASE, Gprueba);
+	//final = clock();
 
-	printf("Tiempo secuencial: %3.30f\n", (final-inicio)/CLOCKS_PER_SEC);
+	printf("Tiempo secuencial: %3.5f\n", (double)(final-inicio)/CLOCKS_PER_SEC);
+	printf("%d grafos\n", DATABASE->n);
+	printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 
 	return 0;
 }

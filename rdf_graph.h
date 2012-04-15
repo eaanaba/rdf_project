@@ -1,3 +1,13 @@
+// Estructura para la lista de los terminos
+typedef struct strlista
+{
+    unsigned char *string;
+    int tf; // numero ocurrencias del termino en en grafo
+    int df; // numero de grafos que contienen este término
+    double idf;
+    struct strlista *next;
+} *lista;
+
 // valor del nodo o edge
 typedef struct {
     unsigned char *string;
@@ -36,6 +46,7 @@ typedef struct {
     rdf_node_set V;
     rdf_edge_set E;
     int cost;
+    lista terms;
 } *rdf_graph;
 
 // database
@@ -43,6 +54,7 @@ typedef struct database {
     rdf_graph G;
     int n;
     rdf_graph current;
+    //lista terms; // terminos de la base de datos
     struct database *next;
 } *rdf_database;
 

@@ -9,6 +9,7 @@
 #include "rdf_graph.h"
 #include "rdf_parser.h"
 #include "rdf_lps.h"
+#include "rdf_similar.h"
 
 #define  INIT  1        // Message dando tamano
 #define  ANSW  3        // Message retornando verificacion
@@ -27,10 +28,10 @@ int main(int argc, char **argv)
 	int i;
 	int rc;
 	MPI_Status stat;
-	double start;        // Begin parallel sort
-    double middle;       // Finish parallel sort
+
 	double finish;
-	double start2;
+	double start;
+	double time_total;
 
 	rc = MPI_Init(&argc,&argv);
 	rc = MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
@@ -70,6 +71,9 @@ int main(int argc, char **argv)
 		inicio = 0;
 		fin = inicio + porcion-1;
 
+		// hecho a correr el reloj
+		start = clock();
+
 		// envio los indices que deben leer
 		for( i = 1; i < nprocs; i++)
 		{
@@ -88,17 +92,14 @@ int main(int argc, char **argv)
 		inicio = 0;
 		fin = inicio + porcion-1;
 
-		// sincronizamos que todos tengan BD lista
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		// empieza a buscar el mismo
-		start = MPI_Wtime();
 		encontrado[0] = buscarn(DATABASE, Gprueba, inicio, fin);
 
 		// recibo lo de los demas nodos
 		for( i = 1; i < nprocs; i++)
 			MPI_Recv(&encontrado[i], 1, MPI_INT, i, ANSW, MPI_COMM_WORLD, &stat);
-		middle = MPI_Wtime();
+
+		finish = clock();
+		time_total = (double)(finish - start)/CLOCKS_PER_SEC;
 	}
 	else
 	{
@@ -110,9 +111,6 @@ int main(int argc, char **argv)
 		MPI_Recv(&inicio, 1, MPI_INT, 0, INIT, MPI_COMM_WORLD, &stat);
 		MPI_Recv(&fin, 1, MPI_INT, 0, INIT, MPI_COMM_WORLD, &stat);
 
-		// sincronizamos que todos tengan BD lista
-		MPI_Barrier(MPI_COMM_WORLD);
-
 		// empieza a buscar el mismo
 		encontrado = buscarn(DATABASE, Gprueba, inicio, fin);
 		
@@ -123,16 +121,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	// secuential
-	start2 = MPI_Wtime();
-	buscar(DATABASE, Gprueba);
-	finish = MPI_Wtime();
-
 	// solo myran == 0 ejecuta aqui
 	// tiempo
-	printf("tiempo paralelo: %3.3f\n", (middle-start));
-	printf("tiempo secuencial: %3.3f\n", (finish-start2));
-	printf ("Speed-up:  %3.3f\n", (finish-start2)/(middle-start) );
+	printf("tiempo paralelo: %3.5f\n", time_total);
 	printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 
 	MPI_Abort(MPI_COMM_WORLD, 0);

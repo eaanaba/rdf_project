@@ -24,7 +24,7 @@ static void save_triple(void *user, raptor_statement *triple)
     else
         o = triple->object->value.literal.string;
     
-    if(count == 200000)
+    if(count == 10)
     {
         raptor_parser_parse_abort(rdf_parser);
     }
