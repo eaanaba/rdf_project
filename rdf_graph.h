@@ -2,7 +2,7 @@
 typedef struct strlista
 {
     unsigned char *string;
-    int tf; // numero ocurrencias del termino en en grafo
+    int tf;
     int df; // numero de grafos que contienen este término
     double idf;
     struct strlista *next;

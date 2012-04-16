@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "rdf_graph.h"
 #include "rdf_similar.h"
@@ -92,10 +93,9 @@ void lista_add_term(lista l, char *s)
     {
         aux->string = (char*)calloc(slen, sizeof(char*));
         strcpy(aux->string, s);
-        aux->tf++;
-        return;
     }
 
+    // busco en la lista de terminos
     while(aux->next != NULL)
     {
         if(!strcmp(aux->string, s))
@@ -109,16 +109,15 @@ void lista_add_term(lista l, char *s)
     if(!strcmp(aux->string, s))
         flag = 1;
 
-    if(!flag)
+    if(flag == 0)
     {
         nuevo = lista_new();
         nuevo->string = (char*)calloc(slen, sizeof(char*));
         strcpy(nuevo->string, s);
         nuevo->tf++;
         aux->next = nuevo;
-    } else {
+    } else
         aux->tf++;
-    }
 }
 
 // proceso los terminos de cada lista de cada grafo
@@ -159,6 +158,31 @@ void lista_proc(lista l, rdf_database db)
         
         aux = aux->next;
     }
+
+    // recorro bd y saco idf
+    auxdb = db;
+    while(auxdb != NULL)
+    {
+        aux2 = auxdb->G->terms;
+        while(aux2 != NULL)
+        {
+            aux = l;
+            while(aux != NULL)
+            {
+                if(!strcmp(aux->string, aux2->string))
+                {
+                    // calculo idf
+                    aux2->idf = log10((float)(db->n/aux->df));
+                    break;
+                }
+                aux = aux->next;
+            }
+            
+            aux2 = aux2->next;
+        }
+
+        auxdb = auxdb->next;
+    }
 }
 
 void lista_print(lista l)
@@ -166,7 +190,7 @@ void lista_print(lista l)
     lista aux = l;
     while(aux)
     {
-        printf("%s-%d-%d\n", aux->string, aux->tf, aux->df);
+        printf("%s-%3.5f\n", aux->string, aux->idf);
         aux = aux->next;
     }
 }

@@ -31,8 +31,6 @@ int main(int argc, char **argv)
 	lista_proc(terms, DATABASE);
 	final = clock();
 
-	lista_print(terms);
-
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
 	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/deathPlace", "http://dbpedia.org/resource/Chalcis");
