@@ -10,10 +10,13 @@
 #include "rdf_lps.h"
 #include "rdf_similar.h"
 
+int compare(const void* left, const void* right);  // for qsort()
+
 int main(int argc, char **argv)
 {
 	long inicio;
 	long final;
+	int i;
 
 	if(argc != 2)
 	{
@@ -25,11 +28,11 @@ int main(int argc, char **argv)
 	rdf_database DATABASE = rdf_database_new();
 	rdf_database_read_file(DATABASE, argv[1]);
 
-	// creo los terms globales y de cada grafo
-	inicio = clock();
+	// creo los terms globales y de cada grafo y obtengo los indices
+	//inicio = clock();
 	lista terms = database_get_terms(DATABASE);
 	lista_proc(terms, DATABASE);
-	final = clock();
+	//final = clock();
 
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
@@ -43,9 +46,30 @@ int main(int argc, char **argv)
 	//buscar(DATABASE, Gprueba);
 	//final = clock();
 
+	inicio = clock();
+	query_result resultado = database_query_graph(DATABASE, Gprueba, terms);
+	qsort(resultado, DATABASE->n, sizeof *resultado, compare);
+	final = clock();
+
+	//for(i = 0; i < DATABASE->n; i++)
+	//	printf("Grafo(%d) = %3.5f\n", resultado[i].index, resultado[i].idf);
+
 	printf("Tiempo secuencial: %3.5f\n", (double)(final-inicio)/CLOCKS_PER_SEC);
 	printf("%d grafos\n", DATABASE->n);
 	printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 
+	return 0;
+}
+
+// compare
+int compare(const void* left, const void* right)
+{
+	query_result lt = (query_result) left;
+	query_result rt = (query_result) right;
+
+	double diff = lt->idf - rt->idf;
+	
+	if ( diff < 0 ) return +1;
+	if ( diff > 0 ) return -1;
 	return 0;
 }

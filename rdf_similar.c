@@ -18,6 +18,143 @@ lista lista_new()
     return nuevo;
 }
 
+query_result database_query_graph_parallel(rdf_database db, rdf_graph G, lista l, int size, int loc)
+{
+    rdf_graph_set_terms(G); // seteo los terminos del grafo
+    rdf_graph_proc(G, l, db->n); // obtengo los indices df e idf
+
+    query_result resultado = rdf_graph_compare_parallel(db, G, size, loc);
+
+    return resultado;
+}
+
+// obtengo la similaridad de un grafo con todos de la bd
+query_result database_query_graph(rdf_database db, rdf_graph G, lista l)
+{
+    rdf_graph_set_terms(G); // seteo los terminos del grafo
+    rdf_graph_proc(G, l, db->n); // obtengo los indices df e idf
+
+    query_result resultado = rdf_graph_compare(db, G);
+
+    return resultado;
+}
+
+// llena G->terms con los terminos del grafo
+void rdf_graph_set_terms(rdf_graph G)
+{
+    rdf_node_set aux = G->V;
+    rdf_edge_set aux2 = G->E;
+    G->terms = lista_new();
+
+    while(aux != NULL)
+    {
+        lista_add_string(G->terms, aux->value->value.string);
+        aux = aux->next;
+    }
+
+    while(aux2 != NULL)
+    {
+        lista_add_string(G->terms, aux2->value->predicate.string);
+        aux2 = aux2->next;
+    }
+}
+
+// procesa el grafo dado obteniendo los indices, df e idf
+void rdf_graph_proc(rdf_graph G, lista l, int d)
+{
+    lista aux = G->terms;
+    lista aux2;
+
+    while(aux != NULL)
+    {
+        aux2 = l;
+        while(aux2 != NULL)
+        {
+            if(!strcmp(aux->string, aux2->string))
+            {
+                aux->df = aux2->df;
+                if(aux2->df != 0)
+                {
+                    float division = ((float)d/aux2->df);
+                    aux->idf = (float)log10(division);
+                }
+                break;
+            }
+            aux2 = aux2->next;
+        }
+        aux = aux->next;
+    }
+}
+
+// obtiene similaridad de un grafo con todos los grafos de la bd
+query_result rdf_graph_compare(rdf_database db, rdf_graph G)
+{
+    //double resultado[db->n]; // numero de grafos
+    //double *resultado = (double*) calloc (db->n, sizeof *resultado);
+    query_result vector = (query_result)calloc(db->n, sizeof(*vector));
+    //query_result vector[db->n];
+    rdf_database auxdb = db;
+
+    int i = 0;
+    while(auxdb != NULL)
+    {
+        vector[i].idf = rdf_graph_similar(G, auxdb->G);
+        vector[i].index = auxdb->G->index;
+        i++;
+        auxdb = auxdb->next;
+    }
+
+    return vector;
+}
+
+// obtiene similaridad de un grafo con todos los grafos de la bd paralelo
+query_result rdf_graph_compare_parallel(rdf_database db, rdf_graph G, int size, int loc)
+{
+    //double resultado[size];
+    //double *resultado = (double*) calloc (size, sizeof *resultado);
+    query_result vector = (query_result)calloc(size, sizeof(*vector));
+    rdf_database auxdb = db;
+
+    int final = loc + size;
+    
+    int i = 0;
+    while(auxdb != NULL)
+    {
+        if(auxdb->G->index >= loc && auxdb->G->index < final)
+        {
+            vector[i].idf = rdf_graph_similar(G, auxdb->G);
+            vector[i].index = auxdb->G->index;
+            i++;
+        }
+        auxdb = auxdb->next;
+    }
+
+    return vector;
+}
+
+// similaridad entre dos grafos y multiplica los indices
+double rdf_graph_similar(rdf_graph G1, rdf_graph G2)
+{
+    lista aux1 = G1->terms;
+    lista aux2;
+    double suma = 0.0;
+
+    while(aux1)
+    {
+        aux2 = G2->terms;
+        while(aux2)
+        {
+            if(!strcmp(aux1->string, aux2->string))
+                suma = suma + (aux1->idf * aux2->idf);
+            aux2 = aux2->next;
+        }
+        aux1 = aux1->next;
+    }
+
+    return suma;
+}
+
+// obtengo los terminos de toda la bd
 lista database_get_terms(rdf_database db)
 {
     lista terms = lista_new();
@@ -101,13 +238,17 @@ void lista_add_term(lista l, char *s)
         if(!strcmp(aux->string, s))
         {
             flag = 1;
+            aux->tf++;
             break;
         }
         aux = aux->next;
     }
 
-    if(!strcmp(aux->string, s))
+    if(!strcmp(aux->string, s) && aux->next == NULL)
+    {
         flag = 1;
+        aux->tf++;
+    }
 
     if(flag == 0)
     {
@@ -116,46 +257,36 @@ void lista_add_term(lista l, char *s)
         strcpy(nuevo->string, s);
         nuevo->tf++;
         aux->next = nuevo;
-    } else
-        aux->tf++;
+    }
 }
 
 // proceso los terminos de cada lista de cada grafo
-void lista_proc(lista l, rdf_database db)
+int lista_proc(lista l, rdf_database db)
 {
     lista aux = l;
     lista aux2;
     rdf_database auxdb;
     int n = 0;
-    int flag; // indicara si termino pertenece a grafo
 
     // obtengo n y el indice df
     while(aux != NULL)
     {
         n++;
-
         auxdb = db;
         while(auxdb != NULL)
         {
-            flag = 0;
             aux2 = auxdb->G->terms;
             while(aux2 != NULL)
             {
                 if(!strcmp(aux->string, aux2->string))
                 {
-                    flag = 1;
+                    aux->df++;
                     break;
                 }
                 aux2 = aux2->next;
             }
-
-            // resultado de si lo encuentra
-            if(flag)
-                aux->df++;
-
             auxdb = auxdb->next;
         }
-        
         aux = aux->next;
     }
 
@@ -172,17 +303,21 @@ void lista_proc(lista l, rdf_database db)
                 if(!strcmp(aux->string, aux2->string))
                 {
                     // calculo idf
-                    aux2->idf = log10((float)(db->n/aux->df));
+                    if(aux->df != 0)
+                    {
+                        float division = ((float)db->n/aux->df);
+                        aux2->idf = (float)log10(division);
+                    }
                     break;
                 }
                 aux = aux->next;
             }
-            
             aux2 = aux2->next;
         }
-
         auxdb = auxdb->next;
     }
+
+    return n;
 }
 
 void lista_print(lista l)
@@ -190,7 +325,7 @@ void lista_print(lista l)
     lista aux = l;
     while(aux)
     {
-        printf("%s-%3.5f\n", aux->string, aux->idf);
+        printf("%s -- tf: %d df: %d idf: %3.5f \n", aux->string, aux->tf, aux->df, aux->idf);
         aux = aux->next;
     }
 }
