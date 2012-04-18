@@ -3,17 +3,17 @@
 #include <string.h>
 
 #include "rdf_graph.h"
-#include "rdf_similar.h"
 #include "rdf_lps.h"
 
-int buscarn(rdf_database db, rdf_graph G, int inicio, int fin)
+int buscarn(rdf_database db, rdf_graph G, int loc, int size)
 {
 	rdf_database aux = db;
 	int flag = 0;
+	int final = loc + size;
 
 	while(aux != NULL)
 	{
-		if(aux->n >= inicio && aux->n <= fin )
+		if(aux->n >= loc && aux->n <= final )
 			if(lps(G, aux->G))
 				flag = 1;
 		aux = aux->next;

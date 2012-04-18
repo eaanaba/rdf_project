@@ -8,15 +8,15 @@
 
 #include "rdf_graph.h"
 #include "rdf_parser.h"
-#include "rdf_similar.h"
+#include "rdf_lps.h"
 
-#define  INIT  1        // Mensaje dando el tamano
+#define  INIT  1        // Message dando el tamano
 #define  DATA  2        // mensaje que comunica datos
 #define  ANSW  3        // mensaje retornando el vector y ordenado
 
 int compare(const void* left, const void* right);  // for qsort()
 
-query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l);
+int parallel(int size, int loc, rdf_database db, rdf_graph G);
 
 int main(int argc, char **argv)
 {
@@ -58,8 +58,8 @@ int main(int argc, char **argv)
 	rdf_database_read_file(DATABASE, argv[1]);
 
 	// proceso la base de datos y obtengo los términos
-	lista terms = database_get_terms(DATABASE);
-	lista_proc(terms, DATABASE);
+	//lista terms = database_get_terms(DATABASE);
+	//lista_proc(terms, DATABASE);
 
 	// todos poseen la BD lista
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -72,17 +72,18 @@ int main(int argc, char **argv)
 	// *****
 	if(myRank == 0) // proceso principal Head0
 	{
-		query_result vector;
+		int encuentro; // si encuentra el grafo o no
 		int i;
 
 		start = MPI_Wtime();
-		vector = parallel(DATABASE->n, 0, DATABASE, Gprueba, terms);
+		encuentro = parallel(DATABASE->n, 0, DATABASE, Gprueba);
 		finish = MPI_Wtime();
 
 		//for(i = 0; i < DATABASE->n; i++)
 		//	printf("Grafo(%d) = %3.5f\n", vector[i].index, vector[i].idf);
 
-		printf("Tiempo paralelo: %3.5f\n", (finish-start));
+		printf("Tiempo paralelo LPS: %3.5f\n", (finish-start));
+		printf("Encontre el grafo?: %d\n", encuentro);
 		printf("%d grafos\n", DATABASE->n);
 		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 	}
@@ -94,7 +95,7 @@ int main(int argc, char **argv)
 		rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 		rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 
-		parallel(size, loc, DATABASE, Gprueba, terms);
+		parallel(size, loc, DATABASE, Gprueba);
 
 		MPI_Finalize();
 		return 0;
@@ -121,11 +122,14 @@ int compare(const void* left, const void* right)
 	return 0;
 }
 
-query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
+int parallel(int size, int loc, rdf_database db, rdf_graph G)
 {
 	int parent;
 	int myRank, nProc;
-	int rc, nxt, ltChild, rtChild;
+	int rc, ltChild, rtChild;
+	int flag;
+	int rtEncuentra;
+	int ltEncuentra;
 
 	rc = MPI_Comm_rank (MPI_COMM_WORLD, &myRank);
 	rc = MPI_Comm_size (MPI_COMM_WORLD, &nProc);
@@ -133,8 +137,6 @@ query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
 	parent = (myRank-1)/2;
 	ltChild = (myRank << 1) + 1;
 	rtChild = ltChild + 1;
-
-	query_result vector = (query_result) calloc (size, sizeof(*vector));
 
 	if(ltChild < nProc)
 	{
@@ -144,10 +146,6 @@ query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
 		int left_loc = loc;
 		int right_loc = loc + left_size;
 
-		query_result leftArray  = (query_result) calloc (left_size, sizeof *leftArray);
-        query_result rightArray = (query_result) calloc (right_size, sizeof *rightArray);
-		
-		int   i, j, k;                   // logica merge
 		MPI_Status status;               // estado de MPI
 
 		rc = MPI_Send(&left_size, 1, MPI_INT, ltChild, INIT, MPI_COMM_WORLD);
@@ -160,50 +158,39 @@ query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
 			rc = MPI_Send(&right_loc, 1, MPI_INT, rtChild, INIT, MPI_COMM_WORLD);
 			//printf("yo %d enviando dato a ltchild %d size: %d y loc: %d\n", myRank, rtChild, right_size, right_loc); fflush(stdout);
 
-			rc = MPI_Recv(rightArray, right_size, MPI_LONG_DOUBLE, rtChild, ANSW, MPI_COMM_WORLD, &status );
+			rc = MPI_Recv(&rtEncuentra, 1, MPI_INT, rtChild, ANSW, MPI_COMM_WORLD, &status );
 			//printf("yo %d recibo dato de rtchild %d\n", myRank, rtChild); fflush(stdout);
 		}
 		else
 		{
-			// CONSULTANDO
-			rightArray = database_query_graph_parallel(db, G, l, right_size, right_loc);
-			
-			// ordenar el vector
-			qsort(rightArray, right_size, sizeof *rightArray, compare);
+			// CONSULTANDO EN LPS
+			flag = buscarn(db, G, right_size, right_loc);
+			printf("Yo %d encontre el grafo: %d\n", myRank, flag);
 		}
 
-		rc = MPI_Recv(leftArray, left_size, MPI_LONG_DOUBLE, ltChild, ANSW, MPI_COMM_WORLD, &status );
+		rc = MPI_Recv(&ltEncuentra, 1, MPI_INT, ltChild, ANSW, MPI_COMM_WORLD, &status );
 		//printf("yo %d recibo dato de ltchild %d\n", myRank, ltChild); fflush(stdout);
 
 		// Merge the two results back into vector
-		i = j = k = 0;
-		while ( i < left_size && j < right_size )
-			if ( leftArray[i].idf < rightArray[j].idf)
-				vector[k++] = rightArray[j++];
-			else
-				vector[k++] = leftArray[i++];
-		while ( i < left_size )
-			vector[k++] = leftArray[i++];
-		while ( j < right_size )
-			vector[k++] = rightArray[j++];
+
+		if(ltEncuentra == 1 || rtEncuentra == 1)
+			flag = 1;
 
 		if(myRank == 0)
-			return vector;
+			return flag;
 	} 
 	else
 	{
-		// CONSULTANDO
-		vector = database_query_graph_parallel(db, G, l, size, loc);
-
-		// ordenar el vector
-		qsort(vector, size, sizeof *vector, compare);
+		// CONSULTANDO EN LPS
+		flag = buscarn(db, G, size, loc);
+		printf("Yo %d encontre el grafo: %d\n", myRank, flag);
 	}
 /**
  * Note:  if not the root node, send the result to the parent.
- */
+ **/
  	if ( myRank != 0 )
 	{
-		MPI_Send(vector, size, MPI_LONG_DOUBLE, parent, ANSW, MPI_COMM_WORLD );
-		//printf("yo %d enviado respuesta a %d\n", myRank, parent); fflush(stdout);
+		MPI_Send(&flag, 1, MPI_INT, parent, ANSW, MPI_COMM_WORLD );
+		printf("Yo %d envio mi respuesta: %d\n", myRank, flag);
 	}
 }

@@ -7,15 +7,17 @@
 
 #include "rdf_graph.h"
 #include "rdf_parser.h"
-#include "rdf_lps.h"
 #include "rdf_similar.h"
+#include "rdf_lps.h"
 
 int compare(const void* left, const void* right);  // for qsort()
 
 int main(int argc, char **argv)
 {
-	long inicio;
-	long final;
+	double inicio;
+	double final;
+	double iniciolps;
+	double finallps;
 	int i;
 
 	if(argc != 2)
@@ -42,9 +44,9 @@ int main(int argc, char **argv)
 	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://xmlns.com/foaf/0.1/Person");
 	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://xmlns.com/foaf/0.1/name", "Aristotle");
 
-	//inicio = clock();
-	//buscar(DATABASE, Gprueba);
-	//final = clock();
+	iniciolps = clock();
+	buscar(DATABASE, Gprueba);
+	finallps = clock();
 
 	inicio = clock();
 	query_result resultado = database_query_graph(DATABASE, Gprueba, terms);
@@ -54,7 +56,8 @@ int main(int argc, char **argv)
 	//for(i = 0; i < DATABASE->n; i++)
 	//	printf("Grafo(%d) = %3.5f\n", resultado[i].index, resultado[i].idf);
 
-	printf("Tiempo secuencial: %3.5f\n", (double)(final-inicio)/CLOCKS_PER_SEC);
+	printf("Tiempo secuencial Similar: %3.5f\n", (double)(final-inicio)/CLOCKS_PER_SEC);
+	printf("Tiempo secuencial LPS: %3.5f\n", (double)(finallps-iniciolps)/CLOCKS_PER_SEC);
 	printf("%d grafos\n", DATABASE->n);
 	printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 
