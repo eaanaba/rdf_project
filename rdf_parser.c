@@ -24,7 +24,8 @@ static void save_triple(void *user, raptor_statement *triple)
     else
         o = triple->object->value.literal.string;
     
-    if(count == 10000)
+    // con 100000 y persondata50.rdf tengo la mitad de la bd isomorfa
+    if(count == 100000)
     {
         raptor_parser_parse_abort(rdf_parser);
     }

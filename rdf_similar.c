@@ -18,7 +18,8 @@ lista lista_new()
     return nuevo;
 }
 
-query_result database_query_graph_parallel(rdf_database db, rdf_graph G, lista l, int size, int loc)
+query_result database_query_graph_parallel(rdf_database db, rdf_graph G,
+    lista l, int size, int loc)
 {
     rdf_graph_set_terms(G); // seteo los terminos del grafo
     rdf_graph_proc(G, l, db->n); // obtengo los indices df e idf
@@ -108,7 +109,8 @@ query_result rdf_graph_compare(rdf_database db, rdf_graph G)
 }
 
 // obtiene similaridad de un grafo con todos los grafos de la bd paralelo
-query_result rdf_graph_compare_parallel(rdf_database db, rdf_graph G, int size, int loc)
+query_result rdf_graph_compare_parallel(rdf_database db, rdf_graph G,
+    int size, int loc)
 {
     //double resultado[size];
     //double *resultado = (double*) calloc (size, sizeof *resultado);
@@ -325,7 +327,8 @@ void lista_print(lista l)
     lista aux = l;
     while(aux)
     {
-        printf("%s -- tf: %d df: %d idf: %3.5f \n", aux->string, aux->tf, aux->df, aux->idf);
+        printf("%s -- tf: %d df: %d idf: %3.5f \n",
+            aux->string, aux->tf, aux->df, aux->idf);
         aux = aux->next;
     }
 }

@@ -3,7 +3,7 @@ typedef struct strlista
 {
     unsigned char *string;
     int tf;
-    int df; // numero de grafos que contienen este término
+    int df; // numero de grafos que contienen este termino
     float idf;
     struct strlista *next;
 } *lista;
@@ -14,8 +14,16 @@ struct strquery
     int index; // indice del grafo
     double idf; // grado de similaridad
 };
-
 typedef struct strquery *query_result;
+
+// estructura que guarda el resultado de lps
+struct strlpsquery
+{
+    int flag;
+    int nodos;
+    int grafos;
+};
+typedef struct strlpsquery *lps_result;
 
 // valor del nodo o edge
 typedef struct {

@@ -32,6 +32,7 @@ int main(int argc, char **argv)
    	double finish;
 
 	rc = MPI_Init(&argc, &argv);
+	MPI_Status status;
 
 	if ( rc < 0 )
 	{
@@ -72,93 +73,55 @@ int main(int argc, char **argv)
 	{
 		int i;
 		double suma = 0;
+		size = DATABASE->n/nProc;
+		lps_result resultado[nProc];
+		
+		if(DATABASE->n%2 == 0)
+			loc = size;
+		else
+			loc = size+1;
 
-		start = MPI_Wtime();
-		parallel(DATABASE->n, 0, DATABASE, Gprueba);
+		start = MPI_Wtime(); // tomo el tiempo!
+		for(i = 1; i < nProc; i++)
+		{
+			rc = MPI_Send(&size, 1, MPI_INT, i, INIT, MPI_COMM_WORLD);
+			rc = MPI_Send(&loc, 1, MPI_INT, i, INIT, MPI_COMM_WORLD);
+			loc += size;
+		}
+
+		// maestro busca
+		resultado[0] = buscarn(DATABASE, Gprueba, 0, size+1);
+
+		// recivo datos
+		for(i = 1; i < nProc; i++)
+		{
+			rc = MPI_Recv(&resultado[i], 1, MPI_LONG_DOUBLE,
+				MPI_ANY_SOURCE, ANSW, MPI_COMM_WORLD, &status);
+		}
 		finish = MPI_Wtime();
 
-		suma += (finish-start);
-
-		printf("LPS Paralelo\n");
+		printf("LPS Paralelo M-E\n");
 		printf("Tiempo paralelo LPS: %3.5f\n", (finish-start));
 		printf("%d grafos\n", DATABASE->n);
 		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
+
+		for(i = 0; i < nProc; i++)
+		{
+			printf("Procesador %d:\n", i);
+			printf("flag: %d grafos: %d nodos: %d\n",
+				resultado[i]->flag,resultado[i]->grafos,resultado[i]->nodos);
+		}
 	}
 	else
 	{
-		int i;
-		int parent = (myRank+1) / 2;
-		MPI_Status status;
-
+		lps_result resultado;
+		
 		rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 		rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 
-		parallel(size, loc, DATABASE, Gprueba);
-	}
-}
+		// esclavo busca
+		resultado = buscarn(DATABASE, Gprueba, loc, size);
 
-int parallel(int size, int loc, rdf_database db, rdf_graph G)
-{
-	int parent;
-	int myRank, nProc;
-	int rc, ltChild, rtChild;
-	int flag;
-	int rtEncuentra;
-	int ltEncuentra;
-
-	rc = MPI_Comm_rank (MPI_COMM_WORLD, &myRank);
-	rc = MPI_Comm_size (MPI_COMM_WORLD, &nProc);
-
-	parent = (myRank-1)/2;
-	ltChild = (myRank << 1) + 1;
-	rtChild = ltChild + 1;
-
-	if(ltChild < nProc)
-	{
-		int left_size  = size / 2;
-		int right_size = size - left_size;
-
-		int left_loc = loc;
-		int right_loc = loc + left_size;
-
-		MPI_Status status;               // estado de MPI
-
-		rc = MPI_Send(&left_size, 1, MPI_INT, ltChild, INIT, MPI_COMM_WORLD);
-		rc = MPI_Send(&left_loc, 1, MPI_INT, ltChild, INIT, MPI_COMM_WORLD);
-		//printf("yo %d enviando dato a ltchild %d size: %d y loc: %d\n", myRank, ltChild, left_size, left_loc); fflush(stdout);
-
-		if(rtChild < nProc)
-		{
-			rc = MPI_Send(&right_size, 1, MPI_INT, rtChild, INIT, MPI_COMM_WORLD);
-			rc = MPI_Send(&right_loc, 1, MPI_INT, rtChild, INIT, MPI_COMM_WORLD);
-			//printf("yo %d enviando dato a ltchild %d size: %d y loc: %d\n", myRank, rtChild, right_size, right_loc); fflush(stdout);
-
-			rc = MPI_Recv(&rtEncuentra, 1, MPI_INT, rtChild, ANSW, MPI_COMM_WORLD, &status );
-			//printf("yo %d recibo dato de rtchild %d\n", myRank, rtChild); fflush(stdout);
-		}
-		else
-		{
-			// CONSULTANDO EN LPS
-			flag = buscarn(db, G, right_loc, right_size);
-		}
-
-		rc = MPI_Recv(&ltEncuentra, 1, MPI_INT, ltChild, ANSW, MPI_COMM_WORLD, &status );
-		//printf("yo %d recibo dato de ltchild %d\n", myRank, ltChild); fflush(stdout);
-
-		if(ltEncuentra == 1 || rtEncuentra == 1)
-			flag = 1;
-
-		if(myRank == 0)
-			return flag;
-	} 
-	else
-	{
-		// CONSULTANDO EN LPS
-		flag = buscarn(db, G, loc, size);
-	}
-
- 	if ( myRank != 0 )
-	{
-		MPI_Send(&flag, 1, MPI_INT, parent, ANSW, MPI_COMM_WORLD );
+		rc = MPI_Send(resultado, 1, MPI_LONG_DOUBLE, 0, ANSW, MPI_COMM_WORLD);
 	}
 }

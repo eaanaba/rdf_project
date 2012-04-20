@@ -74,38 +74,42 @@ int main(int argc, char **argv)
 	{
 		query_result vector;
 		int i;
+		double suma = 0;
 
-		start = MPI_Wtime();
-		vector = parallel(DATABASE->n, 0, DATABASE, Gprueba, terms);
-		finish = MPI_Wtime();
+		for(i = 0; i < 10; i++)
+		{
+			start = MPI_Wtime();
+			vector = parallel(DATABASE->n, 0, DATABASE, Gprueba, terms);
+			finish = MPI_Wtime();
 
-		//for(i = 0; i < DATABASE->n; i++)
-		//	printf("Grafo(%d) = %3.5f\n", vector[i].index, vector[i].idf);
+			suma += (finish-start);
+			printf("Tiempo paralelo Similar: %3.5f\n", (finish-start));
+		}
 
-		printf("Tiempo paralelo: %3.5f\n", (finish-start));
+		printf("Similar Paralelo\n");
+		printf("Tiempo promedio de 10 consultas: %3.5f\n", suma/10);
 		printf("%d grafos\n", DATABASE->n);
 		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 	}
 	else
 	{
+		int i;
 		int parent = (myRank+1) / 2;
 		MPI_Status status;
 
-		rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
-		rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
+		for(i = 0; i < 10; i++)
+		{
+			rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
+			rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 
-		parallel(size, loc, DATABASE, Gprueba, terms);
-
-		MPI_Finalize();
-		return 0;
+			parallel(size, loc, DATABASE, Gprueba, terms);
+		}
 	}
 
 	// solo myran == 0 ejecuta aqui
 	// tiempo
 	//printf("tiempo paralelo: %3.5f\n", time_total);
 	//printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
-
-	MPI_Abort(MPI_COMM_WORLD, 0);
 }
 
 // compare

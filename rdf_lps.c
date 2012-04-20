@@ -5,36 +5,57 @@
 #include "rdf_graph.h"
 #include "rdf_lps.h"
 
-int buscarn(rdf_database db, rdf_graph G, int loc, int size)
+lps_result buscarn(rdf_database db, rdf_graph G, int loc, int size)
 {
 	rdf_database aux = db;
 	int flag = 0;
 	int final = loc + size;
+	int count_graph = 0;
+	int count_nodos = 0;
+	lps_result resultado = (lps_result)malloc(sizeof *resultado);
 
 	while(aux != NULL)
 	{
-		if(aux->n >= loc && aux->n <= final )
+		if(aux->G->index >= loc && aux->G->index < final)
+		{
+			count_graph++;
+			count_nodos += rdf_graph_count_nodes(aux->G);
+
 			if(lps(G, aux->G))
-				flag = 1;
+				resultado->flag = 1;
+		}
 		aux = aux->next;
 	}
 
-	return flag;
+	resultado->grafos = count_graph;
+	resultado->nodos = count_nodos;
+
+	return resultado;
 }
 
-int buscar(rdf_database db, rdf_graph G)
+lps_result buscar(rdf_database db, rdf_graph G)
 {
 	rdf_database aux = db;
 	int flag = 0;
+	lps_result resultado = (lps_result)malloc(sizeof *resultado);
+
+	int count_graph = 0;
+	int count_nodos = 0;
 
 	while(aux != NULL)
 	{
+		count_graph++;
+		count_nodos += rdf_graph_count_nodes(aux->G);
+		
 		if(lps(G, aux->G))
-			flag = 1;
+			resultado->flag = 1;
 		aux = aux->next;
 	}
 
-	return flag;
+	resultado->grafos = count_graph;
+	resultado->nodos = count_nodos;
+
+	return resultado;
 }
 
 int lps(rdf_graph G1, rdf_graph G2)
@@ -102,7 +123,10 @@ int matching_subgraphs(rdf_graph G1, rdf_graph S1, rdf_graph G2, rdf_graph S2)
 			e1 = aux1->value;
 			e2 = aux2->value;
 
-			if(strcmp(e1->subject->value.string, e2->subject->value.string) && strcmp(e1->object->value.string, e2->object->value.string) && e1->subject->arity != e2->subject->arity && e1->object->arity != e2->object->arity)
+			if(strcmp(e1->subject->value.string, e2->subject->value.string)
+				&& strcmp(e1->object->value.string, e2->object->value.string)
+				&& e1->subject->arity != e2->subject->arity
+				&& e1->object->arity != e2->object->arity)
 				return 0;
 			
 			aux1 = aux1->next;

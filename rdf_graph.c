@@ -417,4 +417,20 @@ void rdf_database_add_triple(rdf_database db, char *s, char *p, char *o)
 		rdf_edge_add(arco, subject, object, p);
     	rdf_graph_add_edge(G, arco);
 	}
+	else if(subject && object)
+	{
+		if(!rdf_graph_isempty(G))
+			G = rdf_database_add_graph(db);
+
+		subject = rdf_node_new();
+		rdf_node_set_label(subject, s);
+		rdf_graph_add_node(G, subject);
+
+		object = rdf_node_new();
+		rdf_node_set_label(object, o);
+		rdf_graph_add_node(G, object);
+
+		rdf_edge_add(arco, subject, object, p);
+    	rdf_graph_add_edge(G, arco);
+	}
 }
