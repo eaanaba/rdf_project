@@ -45,11 +45,19 @@ int main(int argc, char **argv)
 
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/deathPlace", "http://dbpedia.org/resource/Chalcis");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/birthPlace", "http://dbpedia.org/resource/Stageira");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://purl.org/dc/elements/1.1/description", "Greek philosopher");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://xmlns.com/foaf/0.1/Person");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://xmlns.com/foaf/0.1/name", "Aristotle");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://dbpedia.org/ontology/deathPlace",
+		"http://dbpedia.org/resource/Chalcis");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://dbpedia.org/ontology/birthPlace", 
+		"http://dbpedia.org/resource/Stageira");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://purl.org/dc/elements/1.1/description", "Greek philosopher");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type", 
+		"http://xmlns.com/foaf/0.1/Person");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://xmlns.com/foaf/0.1/name", "Aristotle");
 
 	// levanto la BD
 	rdf_database DATABASE;
@@ -63,7 +71,6 @@ int main(int argc, char **argv)
 	// todos poseen la BD lista
 	MPI_Barrier(MPI_COMM_WORLD);
 
-
 	// *****
 	// *****
 	// EMPIEZA EL PARALELO!
@@ -71,16 +78,17 @@ int main(int argc, char **argv)
 	// *****
 	if(myRank == 0) // proceso principal Head0
 	{
-		int i;
+		int i,j;
 		double suma = 0;
 		size = DATABASE->n/nProc;
-		lps_result resultado[nProc];
+		int resultado[nProc];
 		
 		if(DATABASE->n%2 == 0)
 			loc = size;
 		else
 			loc = size+1;
 
+		for(j=0;j<10;j++){
 		start = MPI_Wtime(); // tomo el tiempo!
 		for(i = 1; i < nProc; i++)
 		{
@@ -95,33 +103,39 @@ int main(int argc, char **argv)
 		// recivo datos
 		for(i = 1; i < nProc; i++)
 		{
-			rc = MPI_Recv(&resultado[i], 1, MPI_LONG_DOUBLE,
-				MPI_ANY_SOURCE, ANSW, MPI_COMM_WORLD, &status);
+			rc = MPI_Recv(&resultado[i], 1, MPI_INT, i, ANSW, MPI_COMM_WORLD, &status);
 		}
 		finish = MPI_Wtime();
-
-		printf("LPS Paralelo M-E\n");
-		printf("Tiempo paralelo LPS: %3.5f\n", (finish-start));
-		printf("%d grafos\n", DATABASE->n);
-		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
+		suma += (finish-start);
+		}
 
 		for(i = 0; i < nProc; i++)
 		{
 			printf("Procesador %d:\n", i);
-			printf("flag: %d grafos: %d nodos: %d\n",
-				resultado[i]->flag,resultado[i]->grafos,resultado[i]->nodos);
+			printf("nodos: %d\n",	resultado[i]);
 		}
+
+		printf("LPS Paralelo M-E\n");
+		printf("Tiempo paralelo LPS: %3.5f\n", suma/10);
+		printf("%d grafos\n", DATABASE->n);
+		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 	}
 	else
 	{
-		lps_result resultado;
+		int resultado;
+		int j;
 		
+		for(j=0;j<10;j++){
 		rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 		rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 
 		// esclavo busca
 		resultado = buscarn(DATABASE, Gprueba, loc, size);
 
-		rc = MPI_Send(resultado, 1, MPI_LONG_DOUBLE, 0, ANSW, MPI_COMM_WORLD);
+		rc = MPI_Send(&resultado, 1, MPI_INT, 0, ANSW, MPI_COMM_WORLD);
+		}
+
+		MPI_Finalize();
+      	return 0;
 	}
 }

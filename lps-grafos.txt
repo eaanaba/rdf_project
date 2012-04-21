@@ -1,0 +1,7 @@
+# plot "lps-nodos.txt" u 1:2 w linespoints
+# nproc	# n nodos m-e
+1	17000
+2	8500
+4	4250
+8	2125
+16	1062

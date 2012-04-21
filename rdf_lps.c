@@ -5,39 +5,35 @@
 #include "rdf_graph.h"
 #include "rdf_lps.h"
 
-lps_result buscarn(rdf_database db, rdf_graph G, int loc, int size)
+int buscarn(rdf_database db, rdf_graph G, int loc, int size)
 {
 	rdf_database aux = db;
 	int flag = 0;
 	int final = loc + size;
 	int count_graph = 0;
 	int count_nodos = 0;
-	lps_result resultado = (lps_result)malloc(sizeof *resultado);
 
 	while(aux != NULL)
 	{
 		if(aux->G->index >= loc && aux->G->index < final)
 		{
 			count_graph++;
-			count_nodos += rdf_graph_count_nodes(aux->G);
 
 			if(lps(G, aux->G))
-				resultado->flag = 1;
+				flag = 1;
+
+			count_nodos += rdf_graph_count_nodes(aux->G);
 		}
-		aux = aux->next;
+	aux = aux->next;
 	}
 
-	resultado->grafos = count_graph;
-	resultado->nodos = count_nodos;
-
-	return resultado;
+	return count_nodos;
 }
 
-lps_result buscar(rdf_database db, rdf_graph G)
+int buscar(rdf_database db, rdf_graph G)
 {
 	rdf_database aux = db;
 	int flag = 0;
-	lps_result resultado = (lps_result)malloc(sizeof *resultado);
 
 	int count_graph = 0;
 	int count_nodos = 0;
@@ -48,14 +44,14 @@ lps_result buscar(rdf_database db, rdf_graph G)
 		count_nodos += rdf_graph_count_nodes(aux->G);
 		
 		if(lps(G, aux->G))
-			resultado->flag = 1;
+			flag = 1;
+
+		count_nodos += rdf_graph_count_nodes(aux->G);
+
 		aux = aux->next;
 	}
 
-	resultado->grafos = count_graph;
-	resultado->nodos = count_nodos;
-
-	return resultado;
+	return count_nodos;
 }
 
 int lps(rdf_graph G1, rdf_graph G2)

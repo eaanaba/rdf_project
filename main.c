@@ -46,11 +46,20 @@ int main(int argc, char **argv)
 
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/deathPlace", "http://dbpedia.org/resource/Chalcis");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/birthPlace", "http://dbpedia.org/resource/Stageira");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://purl.org/dc/elements/1.1/description", "Greek philosopher");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://xmlns.com/foaf/0.1/Person");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://xmlns.com/foaf/0.1/name", "Aristotle");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://dbpedia.org/ontology/deathPlace",
+		"http://dbpedia.org/resource/Chalcis");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://dbpedia.org/ontology/birthPlace",
+		"http://dbpedia.org/resource/Stageira");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://purl.org/dc/elements/1.1/description",
+		"Greek philosopher");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+		"http://xmlns.com/foaf/0.1/Person");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://xmlns.com/foaf/0.1/name", "Aristotle");
 
 	// levanto la BD
 	rdf_database DATABASE;
@@ -75,19 +84,15 @@ int main(int argc, char **argv)
 		query_result vector;
 		int i;
 		double suma = 0;
+		
+		start = MPI_Wtime();
+		vector = parallel(DATABASE->n, 0, DATABASE, Gprueba, terms);
+		finish = MPI_Wtime();
 
-		for(i = 0; i < 10; i++)
-		{
-			start = MPI_Wtime();
-			vector = parallel(DATABASE->n, 0, DATABASE, Gprueba, terms);
-			finish = MPI_Wtime();
-
-			suma += (finish-start);
-			printf("Tiempo paralelo Similar: %3.5f\n", (finish-start));
-		}
+		suma += (finish-start);
 
 		printf("Similar Paralelo\n");
-		printf("Tiempo promedio de 10 consultas: %3.5f\n", suma/10);
+		printf("Tiempo paralelo Similar: %3.5f\n", (finish-start));
 		printf("%d grafos\n", DATABASE->n);
 		printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
 	}
@@ -97,19 +102,16 @@ int main(int argc, char **argv)
 		int parent = (myRank+1) / 2;
 		MPI_Status status;
 
-		for(i = 0; i < 10; i++)
-		{
-			rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
-			rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
+		rc = MPI_Recv(&size, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
+		rc = MPI_Recv(&loc, 1, MPI_INT, MPI_ANY_SOURCE, INIT, MPI_COMM_WORLD, &status);
 
-			parallel(size, loc, DATABASE, Gprueba, terms);
-		}
+		parallel(size, loc, DATABASE, Gprueba, terms);
+
+		MPI_Finalize();
+      	return 0;
 	}
 
-	// solo myran == 0 ejecuta aqui
-	// tiempo
-	//printf("tiempo paralelo: %3.5f\n", time_total);
-	//printf("%d nodos\n", rdf_database_count_nodes(DATABASE));
+	MPI_Abort(MPI_COMM_WORLD, 0);
 }
 
 // compare
@@ -173,13 +175,13 @@ query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
 			rightArray = database_query_graph_parallel(db, G, l, right_size, right_loc);
 			
 			// ordenar el vector
-			qsort(rightArray, right_size, sizeof *rightArray, compare);
+			//qsort(rightArray, right_size, sizeof *rightArray, compare);
 		}
 
 		rc = MPI_Recv(leftArray, left_size, MPI_LONG_DOUBLE, ltChild, ANSW, MPI_COMM_WORLD, &status );
 		//printf("yo %d recibo dato de ltchild %d\n", myRank, ltChild); fflush(stdout);
 
-		// Merge the two results back into vector
+		// Mergeeee
 		i = j = k = 0;
 		while ( i < left_size && j < right_size )
 			if ( leftArray[i].idf < rightArray[j].idf)
@@ -200,7 +202,7 @@ query_result parallel(int size, int loc, rdf_database db, rdf_graph G, lista l)
 		vector = database_query_graph_parallel(db, G, l, size, loc);
 
 		// ordenar el vector
-		qsort(vector, size, sizeof *vector, compare);
+		//qsort(vector, size, sizeof *vector, compare);
 	}
 /**
  * Note:  if not the root node, send the result to the parent.

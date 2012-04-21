@@ -1,0 +1,5 @@
+# 238776 nodos.
+# plot "lpsm-tiempo.txt" u 1:2 t '' w linespoints
+# nproc		# 50% time	# 1 isomorfic
+1		0.06200		0.0520
+2		0.02907		0.02807

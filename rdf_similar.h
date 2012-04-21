@@ -1,13 +1,14 @@
 lista lista_new();
 
 query_result database_query_graph(rdf_database db, rdf_graph G, lista l);
-query_result database_query_graph_parallel(rdf_database db, rdf_graph G, lista l, int size, int loc);
+query_result database_query_graph_parallel(rdf_database db,
+    rdf_graph G, lista l, int size, int loc);
 
 lista database_get_terms(rdf_database db);
 void lista_add_from_graph(lista l, rdf_graph G);
 void lista_add_term(lista l, char *s);
 void lista_add_string(lista l, char *s);
-int lista_proc(lista l, rdf_database db); // retorna numero total de terminos distintos de la bd
+int lista_proc(lista l, rdf_database db);
 void lista_print(lista l);
 
 void rdf_graph_set_terms(rdf_graph G);

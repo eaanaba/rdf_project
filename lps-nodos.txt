@@ -1,0 +1,7 @@
+# plot "lps-nodos.txt" u 1:2 t 'LPS - 116.668 Nodos - 50% isomorfos' w linespoints
+# nproc	# n nodos m-e
+1	139889
+2	69500
+4	35000	
+8	17500
+16	8800

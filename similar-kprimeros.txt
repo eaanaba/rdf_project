@@ -1,0 +1,7 @@
+# k primeros
+# plot [0.5:2.5] "lpsm-tiempo.txt" u 1:2 t '' w linespoints
+# nproc		# con merge	# sin merge
+1		1		25
+2		5		25
+4		5		25
+8		5		25

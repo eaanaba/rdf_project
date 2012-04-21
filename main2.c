@@ -35,11 +35,19 @@ int main(int argc, char **argv)
 
 	// grafo a buscar de prueba
 	rdf_graph Gprueba = rdf_graph_new();
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/deathPlace", "http://dbpedia.org/resource/Chalcis");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://dbpedia.org/ontology/birthPlace", "http://dbpedia.org/resource/Stageira");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://purl.org/dc/elements/1.1/description", "Greek philosopher");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://xmlns.com/foaf/0.1/Person");
-	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", "http://xmlns.com/foaf/0.1/name", "Aristotle");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://dbpedia.org/ontology/deathPlace", 
+		"http://dbpedia.org/resource/Chalcis");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://dbpedia.org/ontology/birthPlace", 
+		"http://dbpedia.org/resource/Stageira");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://purl.org/dc/elements/1.1/description", "Greek philosopher");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle", 
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type", 
+		"http://xmlns.com/foaf/0.1/Person");
+	rdf_graph_add_triple(Gprueba, "http://dbpedia.org/resource/Aristotle",
+		"http://xmlns.com/foaf/0.1/name", "Aristotle");
 
 	double suma = 0;
 
@@ -47,7 +55,7 @@ int main(int argc, char **argv)
 	{
 		inicio = clock();
 		query_result resultado = database_query_graph(DATABASE, Gprueba, terms);
-		qsort(resultado, DATABASE->n, sizeof *resultado, compare);
+		//qsort(resultado, DATABASE->n, sizeof *resultado, compare);
 		final = clock();
 
 		suma += (double)(final-inicio)/CLOCKS_PER_SEC;

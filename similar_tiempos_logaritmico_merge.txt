@@ -1,0 +1,5 @@
+# 40798 nodos
+# plot [0.5:2.5] "lpsm-tiempo.txt" u 1:2 t '' w linespoints
+# nproc		# time con merge
+1		0.03800
+2		0.02125

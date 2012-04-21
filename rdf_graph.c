@@ -288,7 +288,7 @@ rdf_edge rdf_edge_set_max_cost(rdf_edge_set E)
 	{
 		e = aux->value;
 		
-		cost = e->subject->value.cost + e->predicate.cost + e->object->value.cost;
+		cost = e->subject->value.cost+e->predicate.cost+e->object->value.cost;
 		
 		if(cost > maxcost)
 		{
@@ -310,7 +310,8 @@ void rdf_edge_set_print(rdf_edge_set E)
 	while(aux)
 	{
 		arco = aux->value;
-		printf("%s %s %s\n", arco->subject->value.string, arco->predicate.string, arco->object->value.string);
+		printf("%s %s %s\n", arco->subject->value.string,
+			arco->predicate.string, arco->object->value.string);
 		aux = aux->next;
 	}
 }
